@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TCO — Mesa de Entrada vs Addoc | OCASA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  /* ── TOKENS ── */
+  :root {
+    --ocasa-teal: #0097A7;
+    --ocasa-dark: #0D2236;
+    --ocasa-orange: #F5A623;
+    --green-fill: #EAF3DE;
+    --green-border: #C0DD97;
+    --green-text: #27500A;
+    --green-sub: #3B6D11;
+    --red-fill: #FCEBEB;
+    --red-border: #F7C1C1;
+    --red-text: #791F1F;
+    --red-sub: #A32D2D;
+    --surface: #FFFFFF;
+    --surface-alt: #F7F7F5;
+    --border: rgba(0,0,0,0.10);
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --radius: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--surface-alt);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .page { max-width: 860px; margin: 0 auto; }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--ocasa-dark);
+    border-radius: 12px;
+    padding: 1.25rem 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .header-left h1 { font-size: 18px; font-weight: 500; color: #fff; }
+  .header-left p { font-size: 13px; color: rgba(255,255,255,0.55); margin-top: 3px; }
+  .logo { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+  .logo span { color: var(--ocasa-teal); }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .07em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin: 1.5rem 0 8px;
+  }
+
+  /* ── KPI ROW ── */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+  .kpi-row-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+  .kpi {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .kpi .val { font-size: 20px; font-weight: 500; color: var(--text-primary); line-height: 1.1; }
+  .kpi .val.good { color: #1baf7a; }
+  .kpi .val.warn { color: #eda100; }
+  .kpi .lbl { font-size: 12px; color: var(--text-secondary); margin-top: 5px; line-height: 1.4; }
+
+  /* ── TABS ── */
+  .horizon-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+  .tab {
+    padding: 6px 16px;
+    border-radius: var(--radius);
+    border: 0.5px solid #ccc;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    background: var(--surface);
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .tab:hover { background: #f0f0ee; }
+  .tab.active { background: var(--ocasa-dark); color: #fff; border-color: var(--ocasa-dark); }
+
+  /* ── COMPARE GRID ── */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .compare-box { border-radius: 12px; padding: 1.1rem 1.25rem; }
+  .compare-box.own { background: var(--green-fill); border: 0.5px solid var(--green-border); }
+  .compare-box.ext { background: var(--red-fill); border: 0.5px solid var(--red-border); }
+  .compare-box .c-title { font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+  .compare-box.own .c-title { color: var(--green-sub); }
+  .compare-box.ext .c-title { color: var(--red-sub); }
+  .compare-box .big { font-size: 28px; font-weight: 500; line-height: 1.1; }
+  .compare-box.own .big { color: var(--green-text); }
+  .compare-box.ext .big { color: var(--red-text); }
+  .compare-box .sub { font-size: 12px; margin-top: 4px; }
+  .compare-box.own .sub { color: var(--green-sub); }
+  .compare-box.ext .sub { color: var(--red-sub); }
+
+  /* ── SAVING BANNER ── */
+  .saving-banner {
+    background: var(--green-fill);
+    border: 0.5px solid var(--green-border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .saving-banner .s-left { font-size: 13px; color: var(--green-text); }
+  .saving-banner .s-right { font-size: 24px; font-weight: 500; color: var(--green-text); }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+  .cost-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 13px;
+  }
+  .cost-row:last-child { border-bottom: none; font-weight: 500; }
+  .cost-row .item { color: var(--text-secondary); }
+  .cost-row .amount { color: var(--text-primary); }
+
+  /* ── CHART ── */
+  .chart-wrap { position: relative; width: 100%; height: 240px; }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; gap: 20px; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary); }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ── NOTES ── */
+  .notes { font-size: 12px; color: var(--text-muted); line-height: 1.7; }
+  .notes p { margin-bottom: 2px; }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 0.5px solid var(--border);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .kpi-row-3 { grid-template-columns: 1fr 1fr; }
+    .compare-grid { grid-template-columns: 1fr; }
+    .saving-banner { flex-direction: column; gap: 6px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <h1>Análisis TCO — Mesa de Entrada</h1>
+      <p>Modelo propio vs. externalización Addoc · Pilar PL2–PL3</p>
+    </div>
+    <div class="logo">OCASA<span> ↗</span></div>
+  </div>
+
+  <!-- KPIs BASE -->
+  <p class="section-label">Parámetros base mensuales</p>
+  <div class="kpi-row">
+    <div class="kpi"><div class="val">$4.717.306</div><div class="lbl">Retención mensual actual (Addoc)</div></div>
+    <div class="kpi"><div class="val">$1.500.000</div><div class="lbl">Costo mensual propio (sueldo)</div></div>
+    <div class="kpi"><div class="val">$1.650.000</div><div class="lbl">Inversión inicial (escáner + mobiliario)</div></div>
+    <div class="kpi"><div class="val good">$3.217.306</div><div class="lbl">Beneficio neto mensual estimado</div></div>
+  </div>
+
+  <!-- SELECTOR HORIZONTE -->
+  <p class="section-label">Proyección TCO — seleccioná el horizonte</p>
+  <div class="horizon-tabs">
+    <button class="tab active" onclick="setHorizon(3,this)">3 meses</button>
+    <button class="tab" onclick="setHorizon(6,this)">6 meses</button>
+    <button class="tab" onclick="setHorizon(12,this)">12 meses</button>
+  </div>
+
+  <!-- COMPARATIVO -->
+  <div class="compare-grid" style="margin-bottom:12px;">
+    <div class="compare-box own">
+      <div class="c-title">Mesa de Entrada propia</div>
+      <div class="big" id="own-total">$6.150.000</div>
+      <div class="sub" id="own-detail">$1.650.000 inicial + 3 × $1.500.000</div>
+    </div>
+    <div class="compare-box ext">
+      <div class="c-title">Externalización Addoc</div>
+      <div class="big" id="ext-total">$14.151.918</div>
+      <div class="sub" id="ext-detail">3 × $4.717.306 en retenciones</div>
+    </div>
+  </div>
+
+  <!-- AHORRO -->
+  <div class="saving-banner" style="margin-bottom:1.5rem;">
+    <div class="s-left">Ahorro acumulado en el período seleccionado</div>
+    <div class="s-right" id="saving-total">$8.001.918</div>
+  </div>
+
+  <!-- DESGLOSE -->
+  <p class="section-label">Desglose costos — Mesa de Entrada (acumulado)</p>
+  <div class="card" style="margin-bottom:1.5rem;">
+    <div class="cost-row"><span class="item">Inversión inicial (escáner + mobiliario)</span><span class="amount">$1.650.000</span></div>
+    <div class="cost-row"><span class="item" id="salary-label">Sueldo × 3 meses</span><span class="amount" id="salary-amount">$4.500.000</span></div>
+    <div class="cost-row"><span class="item">Total costo propio</span><span class="amount" id="own-total-2">$6.150.000</span></div>
+  </div>
+
+  <!-- GRÁFICO -->
+  <p class="section-label">Comparativo visual — costo acumulado por mes</p>
+  <div class="legend">
+    <span><span class="legend-dot" style="background:#1baf7a;"></span>Mesa de Entrada propia</span>
+    <span><span class="legend-dot" style="background:#e24b4a;"></span>Addoc (retenciones acumuladas)</span>
+  </div>
+  <div class="chart-wrap" style="margin-bottom:1.5rem;">
+    <canvas id="tcoChart" role="img" aria-label="Gráfico comparativo TCO acumulado Mesa de Entrada vs Addoc">Costo acumulado comparativo.</canvas>
+  </div>
+
+  <!-- KPIs OPERATIVOS -->
+  <p class="section-label">KPIs de impacto operativo</p>
+  <div class="kpi-row-3" style="margin-bottom:1.5rem;">
+    <div class="kpi"><div class="val good">14–21 días → &lt;48 hs</div><div class="lbl">Tiempo de disponibilidad documental</div></div>
+    <div class="kpi"><div class="val warn">210.000 págs/mes</div><div class="lbl">Volumen digitalizado (100% trazabilidad)</div></div>
+    <div class="kpi"><div class="val good">Mes 1</div><div class="lbl">ROI — payback de la inversión inicial</div></div>
+  </div>
+
+  <!-- NOTAS -->
+  <p class="section-label">Notas metodológicas</p>
+  <div class="notes card">
+    <p>• Retención Addoc: promedio mensual ARS $4.717.306 (dato histórico del proyecto). Se asume constante como escenario conservador.</p>
+    <p>• Costo mensual recurrente propio: $1.500.000 (sueldo 1 persona). No incluye ajuste inflacionario para simplificar la comparación en términos reales.</p>
+    <p>• Inversión inicial: $1.650.000 (punto medio entre $1.400.000 y $1.900.000 del escáner Epson DS-770 II + mobiliario menor).</p>
+    <p>• Addoc: el costo reflejado son las retenciones económicas evitadas, no un fee de servicio.</p>
+    <p>• El ahorro real a 6 y 12 meses es mayor dado que las retenciones de Addoc ajustan por inflación, mientras que el costo propio tiende a ser más estable.</p>
+  </div>
+
+  <div class="footer">
+    OCASA · Proyecto Mesa de Entrada · PL2–PL3 · Pilar · Mayo 2026
+  </div>
+
+</div>
+
+<script>
+  const INVERSION = 1650000;
+  const SUELDO = 1500000;
+  const RETENCION = 4717306;
+
+  function fmt(n) {
+    return '$' + Math.round(n).toLocaleString('es-AR');
+  }
+
+  let chartInstance = null;
+
+  function buildData(months) {
+    const labels = [];
+    const ownData = [];
+    const extData = [];
+    for (let i = 1; i <= months; i++) {
+      labels.push('Mes ' + i);
+      ownData.push(INVERSION + SUELDO * i);
+      extData.push(RETENCION * i);
+    }
+    return { labels, ownData, extData };
+  }
+
+  function renderChart(months) {
+    const { labels, ownData, extData } = buildData(months);
+    const ctx = document.getElementById('tcoChart').getContext('2d');
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Mesa de Entrada propia',
+            data: ownData,
+            borderColor: '#1baf7a',
+            backgroundColor: 'rgba(27,175,122,0.08)',
+            borderWidth: 2.5,
+            pointRadius: 6,
+            pointBackgroundColor: '#1baf7a',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            tension: 0.3,
+            fill: true
+          },
+          {
+            label: 'Addoc (retenciones acumuladas)',
+            data: extData,
+            borderColor: '#e24b4a',
+            backgroundColor: 'rgba(226,75,74,0.06)',
+            borderWidth: 2.5,
+            pointRadius: 6,
+            pointBackgroundColor: '#e24b4a',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            borderDash: [6, 4],
+            tension: 0.3,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ' ' + ctx.dataset.label + ': ' + fmt(ctx.parsed.y)
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#898781', font: { size: 12 } },
+            grid: { color: 'rgba(0,0,0,0.05)' },
+            border: { color: 'rgba(0,0,0,0.1)' }
+          },
+          y: {
+            ticks: {
+              color: '#898781',
+              font: { size: 11 },
+              callback: v => '$' + (v / 1000000).toFixed(1) + 'M'
+            },
+            grid: { color: 'rgba(0,0,0,0.05)' },
+            border: { color: 'rgba(0,0,0,0.1)' }
+          }
+        }
+      }
+    });
+  }
+
+  function setHorizon(months, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+
+    const ownTotal = INVERSION + SUELDO * months;
+    const extTotal = RETENCION * months;
+    const saving = extTotal - ownTotal;
+
+    document.getElementById('own-total').textContent = fmt(ownTotal);
+    document.getElementById('own-detail').textContent = '$1.650.000 inicial + ' + months + ' × $1.500.000';
+    document.getElementById('ext-total').textContent = fmt(extTotal);
+    document.getElementById('ext-detail').textContent = months + ' × $4.717.306 en retenciones';
+    document.getElementById('saving-total').textContent = fmt(saving);
+    document.getElementById('salary-label').textContent = 'Sueldo × ' + months + ' meses';
+    document.getElementById('salary-amount').textContent = fmt(SUELDO * months);
+    document.getElementById('own-total-2').textContent = fmt(ownTotal);
+
+    renderChart(months);
+  }
+
+  renderChart(3);
+</script>
+</body>
+</html>
